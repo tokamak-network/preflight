@@ -69,9 +69,15 @@ function scenario(name: string, options: ScenarioOptions): Scenario {
  * })
  *
  * await s.run(async (ctx) => {
- *   // ctx.fork.client is a viem PublicClient
+ *   // ctx.fork.client is a viem PublicClient connected to the local Anvil fork
  *   const block = await ctx.fork.client.getBlockNumber()
- *   assertOnChain(ctx).gasUsed({ max: 300_000n })
+ *
+ *   // assertOnChain takes an AssertContext (with snapshots + gasUsed + approvals),
+ *   // which you build from on-chain data collected during the scenario run.
+ *   // Example:
+ *   // assertOnChain({ snapshots: { before, after }, gasUsed: 150_000n, approvals: [] })
+ *   //   .balanceDecreased('ETH', { address: '0xUser', by: 1_000_000_000_000_000_000n })
+ *   //   .gasUsed({ max: 300_000n })
  * })
  * ```
  */

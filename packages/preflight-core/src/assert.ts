@@ -49,6 +49,13 @@ export class OnChainAsserter {
     token: string,
     opts: { readonly address: string; readonly by: bigint }
   ): this {
+    if (
+      !(opts.address in this.ctx.snapshots.before.balances) &&
+      !(opts.address in this.ctx.snapshots.after.balances)
+    ) {
+      throw new Error(`Address "${opts.address}" not found in snapshots`)
+    }
+
     const before =
       this.ctx.snapshots.before.balances[opts.address]?.[token] ?? 0n
     const after =
@@ -56,6 +63,11 @@ export class OnChainAsserter {
     const actual = before - after
 
     if (actual < opts.by) {
+      if (actual < 0n) {
+        throw new Error(
+          `Expected ${token} balance to decrease by ${opts.by}, but balance increased by ${-actual}`
+        )
+      }
       throw new Error(
         `Expected ${token} balance to decrease by ${opts.by}, but decreased by ${actual}`
       )
@@ -74,6 +86,13 @@ export class OnChainAsserter {
     token: string,
     opts: { readonly address: string; readonly min: bigint }
   ): this {
+    if (
+      !(opts.address in this.ctx.snapshots.before.balances) &&
+      !(opts.address in this.ctx.snapshots.after.balances)
+    ) {
+      throw new Error(`Address "${opts.address}" not found in snapshots`)
+    }
+
     const before =
       this.ctx.snapshots.before.balances[opts.address]?.[token] ?? 0n
     const after =

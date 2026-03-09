@@ -43,7 +43,7 @@ describe('assertOnChain', () => {
           address: '0xabc',
           by: 1n,
         })
-      ).toThrow()
+      ).toThrow('Expected DAI balance to decrease by 1')
     })
 
     it('should handle missing address in snapshots', () => {
@@ -52,7 +52,7 @@ describe('assertOnChain', () => {
           address: '0xunknown',
           by: 1n,
         })
-      ).toThrow()
+      ).toThrow('Address "0xunknown" not found in snapshots')
     })
   })
 

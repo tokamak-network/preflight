@@ -64,26 +64,36 @@ export function mockLLM(options: MockLLMOptions): LLMMock {
 }
 
 /** Minimal shape of an OpenAI chat completion params object */
-interface ChatCompletionParams {
+export interface ChatCompletionParams {
   readonly model: string
   readonly messages: ReadonlyArray<{ readonly role: string; readonly content: string }>
 }
 
 /** Minimal shape of an OpenAI chat completion response */
-interface ChatCompletionResponse {
+export interface ChatCompletionResponse {
   readonly choices: ReadonlyArray<{
     readonly message: { readonly role: string; readonly content: string }
   }>
 }
 
 /**
+ * Minimal OpenAI-compatible mock client shape returned by `createMockOpenAI`.
+ * Matches `openai.chat.completions.create(...)` so it can be used as a drop-in
+ * replacement in tests without importing the real `openai` SDK.
+ */
+export interface MockOpenAIClient {
+  readonly chat: {
+    readonly completions: {
+      create(params: ChatCompletionParams): Promise<ChatCompletionResponse>
+    }
+  }
+}
+
+/**
  * Create an OpenAI SDK-compatible mock client backed by an LLMMock.
  *
- * Matches the shape of `openai.chat.completions.create(...)` so it can be
- * used as a drop-in replacement in tests without importing the real SDK.
- *
  * @param mock - LLMMock instance (from `mockLLM`)
- * @returns An object shaped like the OpenAI client's `chat.completions` API
+ * @returns A MockOpenAIClient shaped like the OpenAI client's `chat.completions` API
  *
  * @example
  * ```ts
@@ -92,9 +102,7 @@ interface ChatCompletionResponse {
  * const res = await openai.chat.completions.create({ model: 'gpt-4o', messages: [...] })
  * ```
  */
-export function createMockOpenAI(mock: LLMMock): {
-  chat: { completions: { create(params: ChatCompletionParams): Promise<ChatCompletionResponse> } }
-} {
+export function createMockOpenAI(mock: LLMMock): MockOpenAIClient {
   return {
     chat: {
       completions: {

@@ -47,20 +47,106 @@ describe('createClearance', () => {
     )
   })
 
-  it('should not be expired immediately after creation', () => {
-    const clearance = createClearance(baseOptions)
-    expect(clearance.isExpired()).toBe(false)
+  describe('case-insensitive contract matching', () => {
+    it('should accept allowedContract with different casing', () => {
+      const clearance = createClearance(baseOptions)
+      expect(() =>
+        clearance.validate({ action: 'swap', contract: '0XUNISWAP' })
+      ).not.toThrow()
+    })
+
+    it('should accept lowercase version of allowed contract', () => {
+      const clearance = createClearance(baseOptions)
+      expect(() =>
+        clearance.validate({ action: 'swap', contract: '0xuniswap' })
+      ).not.toThrow()
+    })
   })
 
-  it('should be expired when expiry is 0 seconds', () => {
-    const clearance = createClearance({
-      ...baseOptions,
-      permissions: { ...baseOptions.permissions, expiry: 0 },
+  describe('spendLimit enforcement', () => {
+    it('should pass when spend is within limit', () => {
+      const clearance = createClearance(baseOptions)
+      expect(() =>
+        clearance.validate({
+          action: 'swap',
+          contract: '0xUniswap',
+          spend: { token: 'ETH', amount: 500_000_000_000_000_000n }, // 0.5 ETH
+        })
+      ).not.toThrow()
     })
-    // expiry = 0 means it expires immediately (createdAt + 0ms = createdAt)
-    // Due to execution time, it should already be expired or expire immediately
-    // We just verify the method runs without throwing
-    expect(typeof clearance.isExpired()).toBe('boolean')
+
+    it('should pass when spend equals the limit exactly', () => {
+      const clearance = createClearance(baseOptions)
+      expect(() =>
+        clearance.validate({
+          action: 'swap',
+          contract: '0xUniswap',
+          spend: { token: 'ETH', amount: 1_000_000_000_000_000_000n }, // exactly 1 ETH
+        })
+      ).not.toThrow()
+    })
+
+    it('should throw when spend exceeds the limit', () => {
+      const clearance = createClearance(baseOptions)
+      expect(() =>
+        clearance.validate({
+          action: 'swap',
+          contract: '0xUniswap',
+          spend: { token: 'ETH', amount: 2_000_000_000_000_000_000n }, // 2 ETH
+        })
+      ).toThrow('Spend of 2000000000000000000 for "ETH" exceeds limit 1000000000000000000')
+    })
+
+    it('should not restrict spend for tokens not in spendLimit', () => {
+      const clearance = createClearance(baseOptions)
+      expect(() =>
+        clearance.validate({
+          action: 'swap',
+          contract: '0xUniswap',
+          spend: { token: 'USDC', amount: 999_999_999n }, // USDC not in spendLimit
+        })
+      ).not.toThrow()
+    })
+  })
+
+  describe('expiry', () => {
+    it('should not be expired immediately after creation', () => {
+      const clearance = createClearance(baseOptions)
+      expect(clearance.isExpired()).toBe(false)
+    })
+
+    it('should be expired when expiry is 0 seconds', () => {
+      let tick = 0
+      const now = () => { tick++; return tick }
+      const clearance = createClearance(
+        { ...baseOptions, permissions: { ...baseOptions.permissions, expiry: 0 } },
+        { now }
+      )
+      // createdAt = 1, now() = 2 on second call, 2 > 1 + 0 = true
+      expect(clearance.isExpired()).toBe(true)
+    })
+
+    it('should not be expired when within expiry window', () => {
+      const start = 1_000_000
+      let calls = 0
+      const now = () => { calls++; return calls === 1 ? start : start + 3600_000 } // 1 hour later
+      const clearance = createClearance(
+        { ...baseOptions, permissions: { ...baseOptions.permissions, expiry: 7200 } }, // 2h window
+        { now }
+      )
+      expect(clearance.isExpired()).toBe(false) // 1h elapsed, 2h window — not expired
+    })
+
+    it('should be expired after expiry window passes', () => {
+      const start = 1_000_000
+      let calls = 0
+      const now = () => { calls++; return calls === 1 ? start : start + 90_000_000 } // 25 hours later
+      const clearance = createClearance(
+        { ...baseOptions, permissions: { ...baseOptions.permissions, expiry: 86400 } }, // 24h window
+        { now }
+      )
+      expect(clearance.isExpired()).toBe(true)
+    })
   })
 
   it('should support multiple allowed contracts and actions', () => {

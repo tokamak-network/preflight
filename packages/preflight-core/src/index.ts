@@ -18,4 +18,11 @@ export type { AssertContext, OnChainSnapshot } from './assert'
 
 // LLM mocking
 export { mockLLM, createMockOpenAI } from './mock-llm'
-export type { LLMMock, MockLLMOptions, MockResponse } from './mock-llm'
+export type {
+  LLMMock,
+  MockLLMOptions,
+  MockResponse,
+  MockOpenAIClient,
+  ChatCompletionParams,
+  ChatCompletionResponse,
+} from './mock-llm'

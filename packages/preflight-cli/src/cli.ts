@@ -35,10 +35,15 @@ export async function runPreflight(
 
   try {
     const failed = vitest.state.getCountOfFailedTests()
+    let passed = 0
+    for (const module of vitest.state.getTestModules()) {
+      for (const _test of module.children.allTests('passed')) {
+        passed++
+      }
+    }
+    const total = passed + failed
     const exitCode: 0 | 1 = failed > 0 ? 1 : 0
-    // passed count is not available via the state mock API;
-    // total equals failed since passed is reported as 0
-    return { exitCode, results: { passed: 0, failed, total: failed } }
+    return { exitCode, results: { passed, failed, total } }
   } finally {
     await vitest.close()
   }

@@ -11,21 +11,30 @@ const mockVitest = {
   close: mockClose,
 }
 
+/** Minimal mock of a TestModule with one test of the given state */
+function makeModule(state: 'passed' | 'failed') {
+  return {
+    children: {
+      allTests: function* (filterState?: string) {
+        if (!filterState || filterState === state) {
+          yield { result: () => ({ state }) }
+        }
+      },
+    },
+  }
+}
+
 vi.mock('vitest/node', () => ({
   startVitest: vi.fn((_mode: string, files: string[]) => {
-    const hasFailing = files.some((f) => f.includes('failing'))
-    if (hasFailing) {
-      return Promise.resolve({
-        state: {
-          getCountOfFailedTests: () => 1,
-          collectPaths: () => files,
-        },
-        close: mockClose,
-      })
-    }
+    const failingFiles = files.filter((f) => f.includes('failing'))
+    const passingFiles = files.filter((f) => !f.includes('failing'))
     return Promise.resolve({
       state: {
-        getCountOfFailedTests: () => 0,
+        getCountOfFailedTests: () => failingFiles.length,
+        getTestModules: () => [
+          ...failingFiles.map(() => makeModule('failed')),
+          ...passingFiles.map(() => makeModule('passed')),
+        ],
         collectPaths: () => files,
       },
       close: mockClose,
@@ -86,12 +95,11 @@ describe('runPreflight', () => {
       expect(result.exitCode).toBe(1)
     })
 
-    it('should include test results summary', async () => {
+    it('should include test results summary with accurate counts', async () => {
       const result = await runPreflight(['test.preflight.ts'], {})
-      expect(result).toHaveProperty('results')
-      expect(result.results).toHaveProperty('passed')
-      expect(result.results).toHaveProperty('failed')
-      expect(result.results).toHaveProperty('total')
+      expect(result.results.passed).toBe(1)
+      expect(result.results.failed).toBe(0)
+      expect(result.results.total).toBe(1)
     })
   })
 })

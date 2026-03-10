@@ -4,11 +4,13 @@
 
 ## Packages
 
-| Package | Description | Phase |
-|--------|------|-------|
-| [`@preflight/core`](./packages/preflight-core) | AnvilFork + Scenario API + On-chain assertions | Phase 1 |
-| [`@clearance/core`](./packages/clearance-core) | EIP-7702-based agent execution permission management | Phase 2 |
-| [`@preflight/cli`](./packages/preflight-cli) | CLI test runner | Phase 3 |
+| Package | Description |
+|--------|------|
+| [`@preflight/core`](./packages/preflight-core) | AnvilFork + Scenario API + On-chain assertions |
+| [`@clearance/core`](./packages/clearance-core) | EIP-7702-based agent execution permission management |
+| [`@preflight/cli`](./packages/preflight-cli) | CLI test runner |
+| [`@preflight/adapter-langchain`](./packages/adapter-langchain) | LangChain mock chat model adapter |
+| [`@preflight/adapter-openai-agents`](./packages/adapter-openai-agents) | OpenAI Agents SDK mock adapter |
 
 ## Why preflight
 
@@ -69,7 +71,7 @@ await scenario.run(async (ctx) => {
 
   // On-chain assertions (chainable)
   assertOnChain({ snapshots: { before, after }, gasUsed: 150_000n, approvals: [] })
-    .balanceDecreased('ETH', { address: '0xUserAddress', by: 1_000_000_000_000_000_000n })
+    .balanceDecreased('ETH', { address: '0xUserAddress', min: 1_000_000_000_000_000_000n })
     .gasUsed({ max: 300_000n })
     .noUnexpectedApprovals()
 })
@@ -140,7 +142,11 @@ preflight/
 │   │   └── src/
 │   │       ├── clearance.ts # createClearance() — permission scoping
 │   │       └── index.ts
-│   └── preflight-cli/      # @preflight/cli (Phase 3)
+│   ├── preflight-cli/      # @preflight/cli
+│   ├── adapter-langchain/  # @preflight/adapter-langchain
+│   └── adapter-openai-agents/ # @preflight/adapter-openai-agents
+├── examples/
+│   └── uniswap-swap-agent/ # end-to-end example
 ├── pnpm-workspace.yaml
 └── package.json
 ```
@@ -151,8 +157,8 @@ preflight/
 |-------|------|------|
 | Phase 1 | AnvilFork + Scenario API + On-chain assertions | ✅ Done |
 | Phase 2 | clearance permission scoping SDK | ✅ Done |
-| Phase 3 | CLI + LangChain/OpenAI adapters | Planned |
-| Phase 4 | npm publish + examples + Tokamak adapter | Planned |
+| Phase 3 | CLI + LangChain/OpenAI adapters | ✅ Done |
+| Phase 4 | npm publish + examples + TypeDoc | ✅ Done |
 | Phase 5+ | EIP-7702 live signing + testnet | TBD |
 
 ## License

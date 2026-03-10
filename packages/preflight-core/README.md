@@ -47,7 +47,7 @@ Creates a standalone Anvil fork instance.
 ### `assertOnChain(ctx)`
 
 Chainable on-chain assertion builder:
-- `.balanceDecreased(token, { address, by })`
+- `.balanceDecreased(token, { address, min })`
 - `.balanceIncreased(token, { address, min })`
 - `.gasUsed({ max })`
 - `.noUnexpectedApprovals()`
